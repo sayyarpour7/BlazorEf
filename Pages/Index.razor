@@ -1,0 +1,61 @@
+﻿@page "/"
+
+@using BlazorEf.Data
+@inject ApplicationDbContext  ApplicationDbContext
+@inject NavigationManager NavigationManager
+
+<NavLink href="/Person/create" class="btn btn-primary">ایجاد شخص</NavLink>
+
+@if (pesrsons == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Age </th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in pesrsons)
+            {
+                <tr>
+
+                    <td>@p.Id</td>
+
+                    <td>@p.FirstName</td>
+                    <td>@p.LastName</td>
+                    <td>@p.Age</td>
+                    <td>
+                        <NavLink href="@($"Person/edit/{p.Id}")" class="btn btn-primary">Edit</NavLink>
+                    </td>
+                    <td>
+                        <button @onclick="@(()=>DeletePerson(p.Id))" class="btn btn-danger">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Person> pesrsons;
+
+    protected override void OnInitialized()
+    {
+        pesrsons = ApplicationDbContext.Persons.ToList();
+    }
+    protected void DeletePerson(int Id)
+    {
+        Person person = ApplicationDbContext.Persons.Find(Id);
+        ApplicationDbContext.Persons.Remove(person);
+
+        ApplicationDbContext.SaveChanges();
+        pesrsons = ApplicationDbContext.Persons.ToList();
+    }
+}
