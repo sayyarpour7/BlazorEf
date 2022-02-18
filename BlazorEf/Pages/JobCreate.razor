@@ -1,0 +1,115 @@
+﻿@page "/Job/create/{PersonId:int}"
+@page "/Job/edit/{PersonId:int}/{Id:int}"
+@inject ApplicationDbContext  applicationDbContext
+@inject NavigationManager navigationManager
+@inject IJSRuntime jsRuntime
+
+<div class="row mt-2 mb-5">
+    <h3 class="card-title text-info mb-3 ml-3">@Title شغل    @PersonName</h3>
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <EditForm Model="jobs" OnValidSubmit="HandlePersonUpsert">
+                    <DataAnnotationsValidator />
+                    <div class="form-group">
+                   
+                        <label> @(utils.MyHelper.GetDisplayName<Job>(nameof(jobs.OrganPost)))</label>
+
+
+
+                        <InputText @bind-Value="jobs.OrganPost" class="form-control"></InputText>
+                        <ValidationMessage For="()=>jobs.OrganPost"></ValidationMessage>
+                    </div>
+                    <div class="form-group">
+                        <label> @(utils.MyHelper.GetDisplayName<Job>(nameof(jobs.OrganUnit)))</label>
+                        <InputText @bind-Value="jobs.OrganUnit" class="form-control"></InputText>
+                        <ValidationMessage For="()=>jobs.OrganUnit"></ValidationMessage>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label> @(utils.MyHelper.GetDisplayName<Job>(nameof(jobs.StartDate)))</label>
+                        <DntInputPersianDate @bind-Value="jobs.StartDate"
+                                             LabelName=""
+                                             FieldIcon="bi-calendar"
+                                             ShowCalendarOnFocus="true"
+                                             BeginningOfCentury="1400"
+                                             CalendarFromYear="1350"
+                                             CalendarToYear="1450"
+                                             UsePersianNumbers="true"
+                                             CalendarShowHolidays="true"
+                                             CalendarShowTodayButton="true"
+                                             CalendarUseShortPersianDayNamesOfWeek="false"
+                                             class="form-control" />
+
+                        <ValidationMessage For="()=>jobs.StartDate"></ValidationMessage>
+
+                    </div>
+                    <div class="form-group">
+                        <label> @(utils.MyHelper.GetDisplayName<Job>(nameof(jobs.EndDate)))</label>
+                        <DntInputPersianDate @bind-Value="jobs.EndDate"
+                                             LabelName=""
+                                             FieldIcon="bi-calendar"
+                                             ShowCalendarOnFocus="true"
+                                             BeginningOfCentury="1400"
+                                             CalendarFromYear="1350"
+                                             CalendarToYear="1450"
+                                             UsePersianNumbers="true"
+                                             CalendarShowHolidays="true"
+                                             CalendarShowTodayButton="true"
+                                             CalendarUseShortPersianDayNamesOfWeek="false"
+                                             class="form-control"/>
+
+                        <ValidationMessage For="()=>jobs.EndDate"></ValidationMessage>
+                    </div>
+                   
+                        <div class="form-group">
+                            <button class="btn btn-primary">ثبت </button>
+                            <NavLink href="/" class="btn btn-secondary">بازگشت </NavLink>
+                        </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code
+{
+
+    private Job jobs;
+    private string PersonName;
+    private string Title = "ایجاد";
+    [Parameter] public int? PersonId { get; set; }
+    [Parameter] public int? Id { get; set; }
+    protected override void OnInitialized()
+
+    {
+        Person pesson= applicationDbContext.Persons.Where(p => p.Id == PersonId).Single() ;
+        PersonName = pesson.FirstName + " " + pesson.LastName;
+        if (Id.HasValue)
+        {
+            // Update Mode
+            Title = "تغییر";
+            jobs = applicationDbContext.Job.Where(p => p.JobId == Id ).Single();
+        }
+        else
+        {
+            // Create Mode
+            Title = "ایجاد";
+            jobs = new Job();
+            jobs.PersonId = PersonId;
+        }
+    }
+
+
+    private  async void HandlePersonUpsert()
+    {
+        if (Id.HasValue)
+            applicationDbContext.Job.Update(jobs);
+        else
+            applicationDbContext.Job.Add(jobs);
+
+        await applicationDbContext.SaveChangesAsync();
+        await jsRuntime.InvokeVoidAsync ("ShowToastr", "success", $"The {Title} Command Run  successfully.");
+        navigationManager.NavigateTo($"/{PersonId}");
+    }
+}

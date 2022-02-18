@@ -1,0 +1,212 @@
+﻿@page "/"
+@page "/{id:int}"
+@using utils
+@using BlazorEf.Data
+@using BlazorEf.Pages.Components
+@inject ApplicationDbContext  applicationDbContext
+@inject NavigationManager navigationManager
+@inject IJSRuntime jsRuntime
+<NavLink href="/Person/create" class="btn btn-primary">ایجاد شخص</NavLink>
+
+@if (pesrsons == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table table-bordered table-hover table-responsive  ">
+        <thead>
+            <tr>
+                <td></td>
+                <th>  @(MyHelper.GetDisplayName<Person>(nameof(Person.Id)))</th>
+                <th> @(MyHelper.GetDisplayName<Person>(nameof(Person.FirstName)))</th>
+                <th> @(MyHelper.GetDisplayName<Person>(nameof(Person.LastName)))</th>
+
+                <th> @(MyHelper.GetDisplayName<Person>(nameof(Person.CityId))) </th>
+                <th> @(MyHelper.GetDisplayName<Person>(nameof(Person.BirthDate))) </th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in pesrsons)
+            {
+                <tr>
+              
+                    <td>
+                        <button @onclick="@(() => DoSelectPerson(p.Id))" class="btn btn-secondary">انتخاب</button>
+                    </td>
+                    <td>@p.Id</td>
+
+                    <td>@p.FirstName</td>
+                    <td>@p.LastName</td>
+
+                    <td>@p.CityId</td>
+                    <td>@String.Format("{0:yyyy/mm/dd}", p.BirthDate)</td>
+                    <td>
+                        <NavLink href="@($"Person/edit/{p.Id}")" class="btn btn-primary">ویرایش</NavLink>
+                    </td>
+                    <td>
+                        <button @onclick="@(() => HandelDelete(DeleteType.DelPerson,p.Id))" class="btn btn-danger">حذف</button>
+                    </td>
+
+                </tr>
+            }
+        </tbody>
+    </table>
+    @*<button @onclick="@(() => ShowToastrSuccess("Success Message"))" class="btn btn-danger">Test Toastr</button>*@
+    <MyMessageBox @ref="myMessageBox"
+                  Title="تاییده "
+                  OnCancel="OnCancelMsgBoxClicked"
+                  OnConfirm="OnConfirmDelete">
+        <div>
+            آیا می خواهید این رکورد را حذف کنید؟
+        </div>
+    </MyMessageBox>
+ 
+}
+<ul class="nav nav-tabs" id="myTab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="Jobs-tab" data-bs-toggle="tab" data-bs-target="#Jobs" type="button" role="tab" aria-controls="Jobs" aria-selected="true">سابقه کاری</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="ActiveIsTrue-tab" data-bs-toggle="tab" data-bs-target="#ActiveIsTrue" type="button" role="tab" aria-controls="ActiveIsTrue" aria-selected="false">ضمانت نامه های خاتمه یافته</button>
+    </li>
+
+</ul>
+<div class="tab-content" id="myTabContent">
+    <div class="tab-pane fade show active" id="Jobs" role="tabpanel" aria-labelledby="Jobs-tab">
+
+        @if (SelectedPersonId == -1)
+        {
+            <p> باید یک شخص را در جدول بالا انتخاب کنید</p>
+        }
+        else
+        {
+            <NavLink href="@($"/Job/create/{SelectedPersonId}")" class="btn btn-primary">ایجاد شغل</NavLink>
+            <table class="table table-bordered table-hover table-responsive  ">
+                <thead>
+                    <tr>
+                        <th>  @(MyHelper.GetDisplayName<Job>(nameof(Job.JobId)))</th>
+                        <th> @(MyHelper.GetDisplayName<Job>(nameof(Job.OrganPost)))</th>
+                        <th> @(MyHelper.GetDisplayName<Job>(nameof(Job.OrganUnit)))</th>
+
+                        <th> @(MyHelper.GetDisplayName<Job>(nameof(Job.StartDate))) </th>
+                        <th> @(MyHelper.GetDisplayName<Job>(nameof(Job.EndDate))) </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in jobs)
+                    {
+                        <tr>
+
+                            <td>@p.JobId</td>
+
+                            <td>@p.OrganPost</td>
+                            <td>@p.OrganUnit</td>
+
+                            <td>@String.Format("{0:yyyy/mm/dd}", p.StartDate)</td>
+                            <td>@String.Format("{0:yyyy/mm/dd}", p.EndDate)</td>
+                            <td>
+                                <NavLink href="@($"Job/edit/{SelectedPersonId}/{p.JobId}")" class="btn btn-primary">ویرایش</NavLink>
+                            </td>
+                            <td>
+                                <button @onclick="@(() => HandelDelete(DeleteType.DelJob, p.JobId))" class="btn btn-danger">حذف</button>
+                            </td>
+
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+    <div class="tab-pane fade" id="ActiveIsTrue" role="tabpanel" aria-labelledby="ActiveIsTrue-tab">
+        <table><tr><td>Activetrue </td></tr></table>
+    </div>
+
+</div>
+
+@code {
+    private List<Person> pesrsons;
+    private List<Job> jobs;
+    private MyMessageBox myMessageBox;
+    private int DeletedId = -1;
+    private int SelectedPersonId = -1;
+    private DeleteType deletedType;
+    [Parameter] public int? Id { get; set; }
+    protected override void OnInitialized()
+    {
+        pesrsons = applicationDbContext.Persons.ToList();
+        if (Id.HasValue)
+            DoSelectPerson(Id.Value);
+    }
+    protected void HandelDelete(DeleteType deletetype,  int Id)
+
+    {
+        DeletedId = Id;
+
+        deletedType =deletetype ;
+        myMessageBox.Show();
+
+    }
+
+    protected void DoSelectPerson(int Id)
+    {
+        SelectedPersonId = Id;
+        jobs = applicationDbContext.Job.Where(p => p.PersonId == SelectedPersonId).ToList();
+
+
+    }
+
+    private void OnCancelMsgBoxClicked()
+    {
+        //  myMessageBox.Hide();
+    }
+    private async void OnConfirmDelete()
+    {
+        if (DeletedId == -1)
+        {
+            return;
+        }
+        switch(deletedType)
+        {
+            case DeleteType.DelPerson:
+                {
+                    DeletePerson(DeletedId);
+                    break;
+                }
+            case  DeleteType.DelJob:
+                {
+                    DeleteJob (DeletedId);
+                    break;
+                }
+            default:break;
+        }
+
+    }
+    async Task ShowToastrSuccess(string message)
+    {
+        await jsRuntime.InvokeVoidAsync("ShowToastr", "success", message);
+    }
+
+    private async void DeletePerson(int id)
+    {
+      
+        Person person = applicationDbContext.Persons.Find(id);
+        applicationDbContext.Persons.Remove(person);
+        applicationDbContext.SaveChanges();
+        pesrsons = applicationDbContext.Persons.ToList();
+        await ShowToastrSuccess("حذف شخص با موفقیت انجام شد");
+
+     //    await jsRuntime.InvokeVoidAsync("ShowToastr", "success", $"The { person.FirstName} deleted successfully.");
+    }
+    private async void DeleteJob( int id)
+    {
+ 
+        Job job = applicationDbContext.Job.Find(id);
+        applicationDbContext.Job.Remove(job);
+        applicationDbContext.SaveChanges();
+        DoSelectPerson(SelectedPersonId);
+        await ShowToastrSuccess("حذف شغل با موفقیت انجام شد");
+       // await jsRuntime.InvokeVoidAsync("ShowToastr", "success", $"The { job.OrganPost} deleted successfully.");
+    }
+
+}
