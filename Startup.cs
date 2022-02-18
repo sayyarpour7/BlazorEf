@@ -41,7 +41,7 @@ namespace BlazorEf
             services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<IdentityUser>>();
             services.AddDatabaseDeveloperPageExceptionFilter();
            
-            services.AddScoped<ApplicationDbContext>();
+            //services.AddScoped<ApplicationDbContext>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

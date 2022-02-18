@@ -1,9 +1,10 @@
 ﻿@page "/"
 
 @using BlazorEf.Data
-@inject ApplicationDbContext  ApplicationDbContext
-@inject NavigationManager NavigationManager
-
+@using BlazorEf.Pages.Components
+@inject ApplicationDbContext  applicationDbContext
+@inject NavigationManager navigationManager
+@inject IJSRuntime jsRuntime
 <NavLink href="/Person/create" class="btn btn-primary">ایجاد شخص</NavLink>
 
 @if (pesrsons == null)
@@ -35,27 +36,61 @@ else
                         <NavLink href="@($"Person/edit/{p.Id}")" class="btn btn-primary">Edit</NavLink>
                     </td>
                     <td>
-                        <button @onclick="@(()=>DeletePerson(p.Id))" class="btn btn-danger">Delete</button>
+                        <button @onclick="@(()=>HandelDeletePerson(p.Id))" class="btn btn-danger">Delete</button>
                     </td>
                 </tr>
             }
         </tbody>
     </table>
+    <button @onclick="@(()=>TestSuccess("Success Message"))" class="btn btn-danger">Test Toastr</button>
+    <MyMessageBox @ref="myMessageBox"
+                  Title="تاییده "
+                  OnCancel="OnCancelMsgBoxClicked"
+                  OnConfirm="OnConfirmMsgBoxClicked">
+        <div>
+            آیا می خواهید این رکورد را حذف کنید؟
+        </div>
+    </MyMessageBox>
 }
 
 @code {
     private List<Person> pesrsons;
-
+    private MyMessageBox myMessageBox;
+    private int DeletedId = -1;
     protected override void OnInitialized()
     {
-        pesrsons = ApplicationDbContext.Persons.ToList();
+        pesrsons = applicationDbContext.Persons.ToList();
     }
-    protected void DeletePerson(int Id)
+    protected void HandelDeletePerson(int Id)
     {
-        Person person = ApplicationDbContext.Persons.Find(Id);
-        ApplicationDbContext.Persons.Remove(person);
+        DeletedId = Id;
 
-        ApplicationDbContext.SaveChanges();
-        pesrsons = ApplicationDbContext.Persons.ToList();
+        //
+        myMessageBox.Show();
+
     }
+    private void OnCancelMsgBoxClicked()
+    {
+        //  myMessageBox.Hide();
+    }
+    private async void OnConfirmMsgBoxClicked()
+    {
+        if (DeletedId == -1)
+        {
+            return;
+        }
+        Person person = applicationDbContext.Persons.Find(DeletedId);
+        applicationDbContext.Persons.Remove(person);
+
+        applicationDbContext.SaveChanges();
+
+        pesrsons = applicationDbContext.Persons.ToList();
+
+        await jsRuntime.InvokeVoidAsync("ShowToastr", "success", $"The { person.FirstName} deleted successfully.");
+    }
+    async Task TestSuccess(string message)
+    {
+        await jsRuntime.InvokeVoidAsync("ShowToastr", "success", message);
+    }
+
 }

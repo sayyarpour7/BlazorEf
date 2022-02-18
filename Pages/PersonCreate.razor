@@ -1,7 +1,8 @@
 ﻿@page "/Person/create"
 @page "/Person/edit/{Id:int}"
-@inject ApplicationDbContext  ApplicationDbContext
-@inject NavigationManager NavigationManager
+@inject ApplicationDbContext  applicationDbContext
+@inject NavigationManager navigationManager
+@inject IJSRuntime jsRuntime
 
 <div class="row mt-2 mb-5">
     <h3 class="card-title text-info mb-3 ml-3">@Title اشخاص</h3>
@@ -38,7 +39,7 @@
 @code
 {
     private Person person;
-    private string Title ="ایجاد";
+    private string Title = "ایجاد";
     [Parameter] public int? Id { get; set; }
     protected override void OnInitialized()
     {
@@ -46,7 +47,7 @@
         {
             // Update Mode
             Title = "تغییر";
-            person = ApplicationDbContext.Persons.Where(p => p.Id == Id).Single();
+            person = applicationDbContext.Persons.Where(p => p.Id == Id).Single();
         }
         else
         {
@@ -57,14 +58,15 @@
     }
 
 
-    private void HandlePersonUpsert()
+    private  async void HandlePersonUpsert()
     {
         if (Id.HasValue)
-            ApplicationDbContext.Persons.Update(person);
+            applicationDbContext.Persons.Update(person);
         else
-        ApplicationDbContext.Persons.Add(person);
+            applicationDbContext.Persons.Add(person);
 
-        ApplicationDbContext.SaveChanges();
-        NavigationManager.NavigateTo("/");
+        await applicationDbContext.SaveChangesAsync();
+        await jsRuntime.InvokeVoidAsync ("ShowToastr", "success", $"The {Title} Command Run  successfully.");
+        navigationManager.NavigateTo("/");
     }
 }
